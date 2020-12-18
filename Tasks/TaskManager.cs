@@ -22,7 +22,7 @@ namespace exoLib.Tasks
 	///			Debug.Log("I will be performed during LateUpdate");
 	///		}, TaskPerformWhen.LateUpdate);
 	/// </summary>
-	public class TaskManager : MonoBehaviour
+	public sealed class TaskManager : MonoBehaviour
 	{
 		/// <summary>
 		/// Singleton pattern
