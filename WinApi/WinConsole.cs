@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
-
 using UnityEngine;
 
 namespace exoLib.WinApi
@@ -15,11 +14,19 @@ namespace exoLib.WinApi
 		/// <summary>
 		/// User input text color.
 		/// </summary>
-		public ConsoleColor InputColor { get; set; } = ConsoleColor.Yellow;
+		public ConsoleColor EchoColor { get; set; } = ConsoleColor.Yellow;
 		/// <summary>
 		/// Output text color.
 		/// </summary>
-		public ConsoleColor OutputColor { get; set; } = ConsoleColor.DarkGray;
+		public ConsoleColor LogColor { get; set; } = ConsoleColor.White;
+		/// <summary>
+		/// Error text color.
+		/// </summary>
+		public ConsoleColor ErrorColor { get; set; } = ConsoleColor.Red;
+		/// <summary>
+		/// Warning text color.
+		/// </summary>
+		public ConsoleColor WarningColor { get; set; } = ConsoleColor.Yellow;
 		/// <summary>
 		/// Should the user input be echoed?
 		/// </summary>
@@ -80,7 +87,7 @@ namespace exoLib.WinApi
 				Console.SetOut(standardOutput);
 
 				// Set default color
-				Console.ForegroundColor = OutputColor;
+				Console.ForegroundColor = LogColor;
 			}
 			catch (Exception e)
 			{
@@ -94,6 +101,22 @@ namespace exoLib.WinApi
 		[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Follows Unity.LogCallback signature.")]
 		public void OnLogMessageReceived(string condition, string stackTrace, LogType type)
 		{
+			// Choose color per type
+			switch (type)
+			{
+				case LogType.Log:
+					Console.ForegroundColor = LogColor;
+					break;
+				case LogType.Warning:
+					Console.ForegroundColor = WarningColor;
+					break;
+				case LogType.Error:
+				case LogType.Assert:
+				case LogType.Exception:
+					Console.ForegroundColor = ErrorColor;
+					break;
+			}
+
 			ClearLine();
 			_redrawInput = true;
 		}
@@ -180,11 +203,11 @@ namespace exoLib.WinApi
 				ClearLine();
 
 			// Set color
-			Console.ForegroundColor = InputColor;
+			Console.ForegroundColor = EchoColor;
 			// Write the text
 			Console.Write(_currentInput);
 			// Restore color
-			Console.ForegroundColor = OutputColor;
+			Console.ForegroundColor = LogColor;
 		}
 
 		/// <summary>
@@ -225,9 +248,9 @@ namespace exoLib.WinApi
 
 			if (EchoInput)
 			{
-				Console.ForegroundColor = InputColor;
+				Console.ForegroundColor = EchoColor;
 				Console.WriteLine("> " + input);
-				Console.ForegroundColor = OutputColor;
+				Console.ForegroundColor = LogColor;
 			}
 
 			OnInput?.Invoke(input);
