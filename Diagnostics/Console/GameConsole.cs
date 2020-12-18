@@ -87,7 +87,13 @@ namespace exoLib.Diagnostics.Console
 
 			if (_shouldSubmit)
 			{
-				Submit();
+				// If string is empty or spaces only, clear it
+				// If not, submit it!
+				if (string.IsNullOrWhiteSpace(_currentInput))
+					_currentInput = string.Empty;
+				else
+					Submit();
+
 				_shouldSubmit = false;
 			}
 
@@ -208,7 +214,7 @@ namespace exoLib.Diagnostics.Console
 			if (count == 0)
 				return;
 
-			const int elementHeight = 18;
+			const int elementHeight = 24;
 			// Draw suggestions
 			var autoCompletionRect = new Rect(consoleRect.min.x, consoleRect.max.y + 1, consoleRect.width, count * elementHeight);
 			// Draw background
