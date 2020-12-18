@@ -118,6 +118,18 @@ namespace exoLib.Diagnostics.Console
 			if (!IsOpen)
 				return;
 
+			bool _shouldMoveCaret = false;
+			// Moves caret to end of current input field that keyboard has focus in
+			void moveCaretToEnd(string text)
+			{
+				var textEditor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
+				if (textEditor != null)
+				{
+					textEditor.cursorIndex = text.Length;
+					textEditor.SelectNone();
+				}
+			}
+
 			// If console is open, we may want to handle inputs here,
 			// but process them only when update comes
 			var currentEvent = Event.current;
@@ -131,6 +143,12 @@ namespace exoLib.Diagnostics.Console
 
 				if (currentEvent.keyCode == ClearKey)
 					_shouldClear = true;
+
+				if (currentEvent.keyCode == KeyCode.DownArrow)
+					_shouldMoveCaret = true;
+
+				if (currentEvent.keyCode == KeyCode.UpArrow)
+					_shouldMoveCaret = true;
 			}
 
 			var consoleRect = GetConsoleRect();
@@ -180,6 +198,8 @@ namespace exoLib.Diagnostics.Console
 						_currentInput = newInput;
 
 
+					if (_shouldMoveCaret)
+						moveCaretToEnd(_currentInput);
 				}
 				GUILayout.EndHorizontal();
 			}
