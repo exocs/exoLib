@@ -1,4 +1,5 @@
 # exoLib
+https://github.com/exocs/exoLib
 
 ## What is exoLib:
 ExoLib is a library that provides various utilities and readymade solutions for usage within the Unity Engine. See https://unity.com/ for more.
