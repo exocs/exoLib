@@ -53,15 +53,15 @@ namespace exoLib.Tasks
 		/// <summary>
 		/// Tasks to be performed during Update
 		/// </summary>
-		private Queue<Task> _updateTasks = new Queue<Task>(INITIAL_CAPACITY);
+		private readonly Queue<Task> _updateTasks = new Queue<Task>(INITIAL_CAPACITY);
 		/// <summary>
 		/// Tasks to be performed during FixedUpdate
 		/// </summary>
-		private Queue<Task> _fixedUpdateTasks = new Queue<Task>(INITIAL_CAPACITY);
+		private readonly Queue<Task> _fixedUpdateTasks = new Queue<Task>(INITIAL_CAPACITY);
 		/// <summary>
 		/// Tasks to be performed during LateUpdate
 		/// </summary>
-		private Queue<Task> _lateUpdateTasks = new Queue<Task>(INITIAL_CAPACITY);
+		private readonly Queue<Task> _lateUpdateTasks = new Queue<Task>(INITIAL_CAPACITY);
 
 		/// <summary>
 		/// Returns queue of tasks for given pass.
