@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
@@ -57,6 +58,16 @@ namespace exoLib.Diagnostics.Console
 		private Vector2 _scrollAmount;
 
 		/// <summary>
+		/// Suggestions for autocompletion.
+		/// </summary>
+		private List<string> _suggestions = new List<string>();
+
+		/// <summary>
+		/// So we can see if we changed.
+		/// </summary>
+		private string _lastInput;
+
+		/// <summary>
 		/// Handle input for GUI
 		/// </summary>
 		protected override void Update()
@@ -90,6 +101,7 @@ namespace exoLib.Diagnostics.Console
 			// Parent update
 			base.Update();
 		}
+
 
 		/// <summary>
 		/// Draws the console GUI.
@@ -148,6 +160,7 @@ namespace exoLib.Diagnostics.Console
 				{
 					var newInput = _currentInput;
 					newInput = GUILayout.TextField(newInput);
+
 					if (GUILayout.Button("Submit", GUILayout.MaxWidth(64)))
 					{
 						_shouldSubmit = true;
@@ -159,8 +172,67 @@ namespace exoLib.Diagnostics.Console
 					// This will prevent from writing garbage into input
 					if (!_shouldSubmit && !_shouldToggle)
 						_currentInput = newInput;
+
+
 				}
 				GUILayout.EndHorizontal();
+			}
+			GUILayout.EndArea();
+
+			// if not empty, draw autocompletion
+			if (_currentInput.Length > 0)
+				DrawSuggestions(consoleRect, _currentInput);
+
+			_lastInput = _currentInput;
+		}
+
+
+
+		/// <summary>
+		/// Draws and handles input for auto completion.
+		/// </summary>
+		/// <param name="consoleRect">Rect of the console to append to.</param>
+		/// <param name="input">Input text to find suggestions for</param>
+		private void DrawSuggestions(Rect consoleRect, string input)
+		{
+			int count = _suggestions.Count;
+			if (_lastInput != input)
+			{
+				// Pick suggestions
+				// TODO: Does not have to be picked all the time
+				_suggestions.Clear();
+				count = GetAutocompletionSuggestions(input, _suggestions);
+			}
+
+			// Dont draw anything
+			if (count == 0)
+				return;
+
+			const int elementHeight = 18;
+			// Draw suggestions
+			var autoCompletionRect = new Rect(consoleRect.min.x, consoleRect.max.y + 1, consoleRect.width, count * elementHeight);
+			// Draw background
+			GUI.Box(autoCompletionRect, GUIContent.none);
+
+			// Draw the content
+			GUI.color = ConsoleColors.ContentColor;
+			// Add some margin
+			const int margin = 2;
+			autoCompletionRect.x += margin;
+
+			// Draw the layout
+			GUILayout.BeginArea(autoCompletionRect);
+			{
+				GUILayout.BeginVertical();
+				{
+					// Draw individual suggestions
+					for (int i = 0; i < count; i++)
+					{
+						var suggestion = _suggestions[i].ToLowerInvariant();
+						GUILayout.Label(suggestion, GUILayout.MaxHeight(elementHeight));
+					}
+				}
+				GUILayout.EndVertical();
 			}
 			GUILayout.EndArea();
 		}

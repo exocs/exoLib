@@ -299,6 +299,30 @@ namespace exoLib.Diagnostics.Console
 		}
 
 		/// <summary>
+		/// Iterates through available commands and outputs ones which are partial match.
+		/// </summary>
+		/// <param name="inputText">The name to try and match.</param>
+		/// <param name="maximum">The maximum amount of results returned</param>
+		/// <param name="commandNames">Target list that will be filled with results</param>
+		/// <returns>Returns teh count of suggestions</returns>
+		protected int GetAutocompletionSuggestions(string inputText, List<string> commandNames, int maximum = 16)
+		{
+			int count = 0;
+			var upperText = inputText.ToUpperInvariant();
+			foreach (var keyPair in _commands)
+			{
+				if (keyPair.Key.StartsWith(upperText))
+				{
+					commandNames.Add(keyPair.Key);
+					if (++count >= maximum)
+						break;
+				}
+			}
+
+			return count;
+		}
+
+		/// <summary>
 		/// Tries to find command by its name.
 		/// </summary>
 		/// <param name="commandName">Name of command to find.</param>
