@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
+
 using UnityEngine;
 
 namespace exoLib.WinApi
@@ -31,32 +32,26 @@ namespace exoLib.WinApi
 		/// Should the user input be echoed?
 		/// </summary>
 		public bool EchoInput { get; set; } = true;
-
 		/// <summary>
 		/// Delegate for string based events.
 		/// </summary>
 		public delegate void TextEvent(string text);
-
 		/// <summary>
 		/// Called when user submits input.
 		/// </summary>
 		public event TextEvent OnInput;
-
 		/// <summary>
 		/// Previous output that we can trestore
 		/// </summary>
 		private TextWriter _previousOutput;
-
 		/// <summary>
 		/// Current user input.
 		/// </summary>
 		private string _currentInput = string.Empty;
-
 		/// <summary>
 		/// When log message is received, next update shall redraw the input
 		/// </summary>
 		private bool _redrawInput = false;
-
 		/// <summary>
 		/// Initialize this console window.
 		/// </summary>
@@ -94,7 +89,6 @@ namespace exoLib.WinApi
 				Debug.Log("Output could not be redirected: " + e.Message);
 			}
 		}
-
 		/// <summary>
 		/// When input is received we will clear our line and rewrite it
 		/// </summary>
@@ -120,7 +114,6 @@ namespace exoLib.WinApi
 			ClearLine();
 			_redrawInput = true;
 		}
-
 		/// <summary>
 		/// Update this console window.
 		/// </summary>
@@ -140,7 +133,6 @@ namespace exoLib.WinApi
 			var key = Console.ReadKey();
 			OnKey(key);
 		}
-
 		/// <summary>
 		/// Occurs when the user presses a key
 		/// </summary>
@@ -176,7 +168,6 @@ namespace exoLib.WinApi
 				return;
 			}
 		}
-
 		/// <summary>
 		/// Clears a line in the console.
 		/// </summary>
@@ -188,7 +179,6 @@ namespace exoLib.WinApi
 			Console.CursorTop--;
 			Console.CursorLeft = 0;
 		}
-
 		/// <summary>
 		/// Update the input line
 		/// </summary>
@@ -209,7 +199,6 @@ namespace exoLib.WinApi
 			// Restore color
 			Console.ForegroundColor = LogColor;
 		}
-
 		/// <summary>
 		/// Erases one character from the input line
 		/// </summary>
@@ -222,7 +211,6 @@ namespace exoLib.WinApi
 			_currentInput = _currentInput.Substring(0, _currentInput.Length - 1);
 			RewriteInputLine();
 		}
-
 		/// <summary>
 		/// Erases the whole content of input line.
 		/// </summary>
@@ -231,7 +219,6 @@ namespace exoLib.WinApi
 			ClearLine();
 			_currentInput = string.Empty;
 		}
-
 		/// <summary>
 		/// Submits current input line
 		/// </summary>
@@ -255,7 +242,6 @@ namespace exoLib.WinApi
 
 			OnInput?.Invoke(input);
 		}
-
 		/// <summary>
 		/// Clears the console window.
 		/// </summary>
@@ -263,7 +249,6 @@ namespace exoLib.WinApi
 		{
 			Console.Clear();
 		}
-
 		/// <summary>
 		/// Disposes of this console window.
 		/// </summary>
@@ -272,7 +257,6 @@ namespace exoLib.WinApi
 			Console.SetOut(_previousOutput);
 			FreeConsole();
 		}
-
 		/// <summary>
 		/// Set the console title
 		/// </summary>

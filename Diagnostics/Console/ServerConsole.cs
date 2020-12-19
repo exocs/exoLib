@@ -19,7 +19,6 @@ namespace exoLib.Diagnostics.Console
 		/// By assumption in headless build the console is always open.
 		/// </summary>
 		public override bool IsOpen => true;
-
 		/// <summary>
 		/// Initialize server console.
 		/// </summary>
@@ -39,7 +38,6 @@ namespace exoLib.Diagnostics.Console
 			// Parent awake
 			base.Awake();
 		}
-
 		/// <summary>
 		/// Update the console state.
 		/// </summary>
@@ -54,7 +52,6 @@ namespace exoLib.Diagnostics.Console
 			// Parent update
 			base.LateUpdate();
 		}
-
 		/// <summary>
 		/// Dispose of the console.
 		/// </summary>
@@ -66,7 +63,6 @@ namespace exoLib.Diagnostics.Console
 			// Parent destroy
 			base.OnDestroy();
 		}
-
 		/// <summary>
 		/// Clear the console window.
 		/// </summary>
@@ -75,7 +71,6 @@ namespace exoLib.Diagnostics.Console
 			_consoleWindow.Clear();
 			base.ClearConsole();
 		}
-
 		/// <summary>
 		/// Called when a log mesage is received. Passed into console window.
 		/// </summary>

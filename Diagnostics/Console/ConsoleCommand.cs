@@ -24,7 +24,6 @@
 		/// The number of arguments required by this command.
 		/// </summary>
 		public readonly uint MinimumArgumentsCount;
-
 		/// <summary>
 		/// Create the wrapper from provided information
 		/// </summary>
@@ -32,9 +31,8 @@
 		{
 			Function = function;
 			MinimumArgumentsCount = minimumArgumentsCount;
-			Description = commandDescription;			
+			Description = commandDescription;
 		}
-
 		/// <summary>
 		/// Hiding the default constructor.
 		/// </summary>

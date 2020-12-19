@@ -13,6 +13,9 @@ namespace exoLib.Diagnostics.Console
 	/// </summary>
 	public abstract class DebugConsole : MonoBehaviour
 	{
+		/// <summary>
+		/// Colors used by the console. Only works for the game instance.
+		/// </summary>
 		[Serializable]
 		public struct Colors
 		{
@@ -20,27 +23,22 @@ namespace exoLib.Diagnostics.Console
 			/// Primary console color.
 			/// </summary>
 			public Color ContentColor;
-
 			/// <summary>
 			/// Background console color.
 			/// </summary>
 			public Color BackgroundColor;
-
 			/// <summary>
 			/// Default log console color.
 			/// </summary>
 			public Color LogColor;
-
 			/// <summary>
 			/// Warning log console color.
 			/// </summary>
 			public Color WarningColor;
-
 			/// <summary>
 			/// Error log console color.
 			/// </summary>
 			public Color ErrorColor;
-
 			/// <summary>
 			/// Echoed input color.
 			/// </summary>
@@ -68,12 +66,15 @@ namespace exoLib.Diagnostics.Console
 				}
 			}
 		}
-
 		/// <summary>
 		/// Provides the user with a in-game debug console.
 		/// Allows registering of various commands with parameters, see example for reference.
 		/// </summary>
 		private static DebugConsole _instance;
+		/// <summary>
+		/// Returns (or creates if none exists) the instance of debug console.
+		/// There should only be one instance at any given time!
+		/// </summary>
 		public static DebugConsole Instance
 		{
 			get
@@ -95,17 +96,14 @@ namespace exoLib.Diagnostics.Console
 				return _instance;
 			}
 		}
-
 		/// <summary>
 		/// Is the console open?
 		/// </summary>
 		public virtual bool IsOpen { get; set; }
-
 		/// <summary>
 		/// Should the user input be echoed to the console?
 		/// </summary>
 		public virtual bool EchoInput { get; set; } = true;
-
 		/// <summary>
 		/// Is the console Width and Height specified as relative (0,1) or in pixels (0, pixels) ?
 		/// </summary>
@@ -126,10 +124,9 @@ namespace exoLib.Diagnostics.Console
 		/// </summary>
 		public virtual Vector2 Position { get; set; } = Vector2.zero;
 		/// <summary>
-		/// Console colors.
+		/// Console colors provided via <see cref="Colors"/> struct.
 		/// </summary>
 		public Colors ConsoleColors = Colors.Default;
-
 		/// <summary>
 		/// To not reallocate the comamnds dictionary intially, we will begin with fixed capacity.
 		/// </summary>
@@ -138,7 +135,6 @@ namespace exoLib.Diagnostics.Console
 		/// Dictionary of registered console commands.
 		/// </summary>
 		private readonly Dictionary<string, ConsoleCommand> _commands = new Dictionary<string, ConsoleCommand>(INITIAL_CAPACITY);
-
 		/// <summary>
 		/// Initialize the console.
 		/// </summary>
@@ -198,8 +194,10 @@ namespace exoLib.Diagnostics.Console
 			{
 				ClearConsole();
 			}, 0, "Clears the console window.");
-		}
 
+			// Log some nice message
+			OnLogMessageReceived($"Welcome to {Application.productName}! Type in 'help' for more information!", "", LogType.Log);
+		}
 		/// <summary>
 		/// Called on frame basis.
 		/// </summary>
@@ -207,7 +205,6 @@ namespace exoLib.Diagnostics.Console
 		{
 
 		}
-
 		/// <summary>
 		/// Called after each frame.
 		/// </summary>
@@ -215,7 +212,6 @@ namespace exoLib.Diagnostics.Console
 		{
 
 		}
-
 		/// <summary>
 		/// Handles disposing of console.
 		/// </summary>
@@ -223,7 +219,6 @@ namespace exoLib.Diagnostics.Console
 		{
 
 		}
-
 		/// <summary>
 		/// Clear the console.
 		/// </summary>
@@ -231,7 +226,6 @@ namespace exoLib.Diagnostics.Console
 		{
 
 		}
-
 		/// <summary>
 		/// Attached to application log event.
 		/// </summary>
@@ -239,7 +233,6 @@ namespace exoLib.Diagnostics.Console
 		{
 
 		}
-
 		/// <summary>
 		/// Tries to parse command and execute it from the provided line of text.
 		/// </summary>
@@ -267,7 +260,6 @@ namespace exoLib.Diagnostics.Console
 
 			return ExecuteCommand(commandName, arguments);
 		}
-
 		/// <summary>
 		/// Executes command of provided name (if it exists).
 		/// </summary>
@@ -297,7 +289,6 @@ namespace exoLib.Diagnostics.Console
 			}
 			return true;
 		}
-
 		/// <summary>
 		/// Iterates through available commands and outputs ones which are partial match.
 		/// </summary>
@@ -321,7 +312,6 @@ namespace exoLib.Diagnostics.Console
 
 			return count;
 		}
-
 		/// <summary>
 		/// Tries to find command by its name.
 		/// </summary>
@@ -335,7 +325,6 @@ namespace exoLib.Diagnostics.Console
 
 			return null;
 		}
-
 		/// <summary>
 		/// Registers command into the console.
 		/// </summary>
@@ -351,7 +340,6 @@ namespace exoLib.Diagnostics.Console
 			_commands.Add(key, consoleCommand);
 			return true;
 		}
-
 		/// <summary>
 		/// Registers command into the console.
 		/// </summary>
@@ -364,6 +352,23 @@ namespace exoLib.Diagnostics.Console
 		{
 			var command = new ConsoleCommand(commandFunction, minimumArgumentsCount, description);
 			return RegisterCommand(commandName, command);
+		}
+		/// <summary>
+		/// Unregister a command by its name (key) from the console.
+		/// Returns true on success (was removed), false otherwise. (Command not found, already deleted, ...)
+		/// </summary>
+		/// <param name="commandName">The name of command to unregister</param>
+		/// <returns></returns>
+		public bool UnregisterCommand(string commandName)
+		{
+			var key = commandName.ToUpperInvariant();
+			if (_commands.ContainsKey(key))
+			{
+				_commands.Remove(key);
+				return true;
+			}
+
+			return false;
 		}
 	}
 }

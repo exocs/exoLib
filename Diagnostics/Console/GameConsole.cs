@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+
 using UnityEngine;
 
 namespace exoLib.Diagnostics.Console
@@ -16,80 +17,74 @@ namespace exoLib.Diagnostics.Console
 		/// Internal GUI input field element name.
 		/// </summary>
 		private const string GUI_INPUT_FIELD = "inputField";
-
 		/// <summary>
 		/// Invalid (none) index.
 		/// </summary>
 		private const int INVALID_INDEX = -1;
-
 		/// <summary>
 		/// The key that will be used to toggle console visibility.
 		/// </summary>
 		public KeyCode OpenCloseKey = KeyCode.BackQuote;
-
 		/// <summary>
 		/// The key that will be used to submit requests.
 		/// </summary>
 		public KeyCode SubmitKey = KeyCode.Return;
-
 		/// <summary>
 		/// The key that will be used to clear our input.
 		/// </summary>
 		public KeyCode ClearKey = KeyCode.Escape;
-
 		/// <summary>
 		/// Current console input written by the user.
 		/// </summary>
 		private string _currentInput = string.Empty;
-
+		/// <summary>
+		/// Input from last time, so we can see if it changed.
+		/// </summary>
+		private string _lastInput;
 		/// <summary>
 		/// Current suggestion (if any).
 		/// </summary>
 		private string _currentSuggestion = string.Empty;
-
-
+		/// <summary>
+		/// Current suggestion index (if any) or -1 (if none).
+		/// </summary>
 		private int _currentSuggestionIndex = -1;
-
 		/// <summary>
 		/// Current console output
 		/// </summary>
 		private readonly StringBuilder _currentOutput = new StringBuilder();
-
 		/// <summary>
 		/// Are we toggling the console?
 		/// </summary>
 		private bool _shouldToggle;
-
 		/// <summary>
 		/// Are we submitting our input?
 		/// </summary>
 		private bool _shouldSubmit;
-
 		/// <summary>
 		/// Are we clearing our input?
 		/// </summary>
 		private bool _shouldClear;
-
 		/// <summary>
 		/// Do we want to apply suggestion?
 		/// </summary>
 		private bool _applySuggestion = false;
-
 		/// <summary>
 		/// Scroll amount in the output field.
 		/// </summary>
 		private Vector2 _scrollAmount;
-
 		/// <summary>
 		/// Suggestions for autocompletion.
 		/// </summary>
-		private List<string> _suggestions = new List<string>();
-
+		private readonly List<string> _suggestions = new List<string>();
 		/// <summary>
-		/// So we can see if we changed.
+		/// Window title GUI style.
 		/// </summary>
-		private string _lastInput;
-
+		private GUIStyle _titleStyle;
+		/// <summary>
+		/// Main window GUI style.
+		/// </summary>
+		private GUIStyle _windowStyle;
 		/// <summary>
 		/// Handle input for GUI
 		/// </summary>
@@ -147,6 +142,23 @@ namespace exoLib.Diagnostics.Console
 		/// </summary>
 		private void OnGUI()
 		{
+			// Initialize styles.
+			// Has to be done from inside of GUI.
+			{
+				if (_windowStyle == null)
+				{
+					_windowStyle = new GUIStyle(GUI.skin.window);
+				}
+				if (_titleStyle == null)
+				{
+					_titleStyle = new GUIStyle(GUI.skin.label)
+					{
+						fontSize = 12,
+						clipping = TextClipping.Overflow
+					};
+				}
+			}
+
 			// Console is closed, we will not draw anything
 			if (!IsOpen)
 				return;
@@ -212,7 +224,7 @@ namespace exoLib.Diagnostics.Console
 					_currentSuggestionIndex = (int)Mathf.Repeat(_currentSuggestionIndex - 1, _suggestions.Count);
 					moveCaret = true;
 				}
-				
+
 				// Clear suggestions
 				if (currentEvent.keyCode == KeyCode.Backspace || currentEvent.keyCode == KeyCode.Escape)
 				{
@@ -236,24 +248,26 @@ namespace exoLib.Diagnostics.Console
 				}
 			}
 
+			// Get rect for console
 			var consoleRect = GetConsoleRect();
+
+			// Draw background
+			// Prepare GUI skins
+			GUI.contentColor = Color.white;
+
+			// Create console background, draw it with the background color
+			GUI.color = ConsoleColors.BackgroundColor;
+			GUI.Box(consoleRect, GUIContent.none, _windowStyle);
+
+			// Start drawing the console window
 			GUILayout.BeginArea(consoleRect);
 			{
-				// Prepare GUI skins
-				var windowStyle = new GUIStyle(GUI.skin.window);
-				GUI.contentColor = Color.white;
-
-				// Create console background, draw it with the background color
-				GUI.color = ConsoleColors.BackgroundColor;
-				GUI.Box(consoleRect, GUIContent.none, windowStyle);
-
 				// Use the foreground color from now on
 				GUI.color = ConsoleColors.ContentColor;
+				// Write the console title
+				GUILayout.Label(Application.productName + " Development Console", _titleStyle, GUILayout.Height(14));
 
-				// Draw console title
-				GUILayout.Label(Application.productName + " Developer Console");
-
-				// Scroll view for content
+				// Scroll view for content (console output)
 				_scrollAmount = GUILayout.BeginScrollView(_scrollAmount);
 				{
 					GUILayout.Label(_currentOutput.ToString());
@@ -329,10 +343,9 @@ namespace exoLib.Diagnostics.Console
 			if (_currentInput.Length > 0)
 				DrawSuggestions(consoleRect, _currentInput);
 
+			// Store last input
 			_lastInput = _currentInput;
-			// Clear previous suggestions
 		}
-
 		/// <summary>
 		/// Draws and handles input for auto completion.
 		/// </summary>
@@ -364,6 +377,7 @@ namespace exoLib.Diagnostics.Console
 			// Add some margin
 			const int margin = 2;
 			autoCompletionRect.x += margin;
+			autoCompletionRect.width -= margin;
 
 			// Draw the layout
 			GUILayout.BeginArea(autoCompletionRect);
@@ -381,7 +395,6 @@ namespace exoLib.Diagnostics.Console
 			}
 			GUILayout.EndArea();
 		}
-
 		/// <summary>
 		/// When a message is logged, it is appended to the output.
 		/// </summary>
@@ -426,7 +439,6 @@ namespace exoLib.Diagnostics.Console
 			// Scroll the window
 			_scrollAmount += new Vector2(0, 1024.0f);
 		}
-
 		/// <summary>
 		/// Clears the output content.
 		/// </summary>
@@ -435,7 +447,6 @@ namespace exoLib.Diagnostics.Console
 			_currentOutput.Clear();
 			base.ClearConsole();
 		}
-
 		/// <summary>
 		/// Submits current input to the console.
 		/// </summary>
@@ -451,7 +462,6 @@ namespace exoLib.Diagnostics.Console
 			// Clear input
 			_currentInput = string.Empty;
 		}
-
 		/// <summary>
 		/// Returns the rect for this console.
 		/// </summary>

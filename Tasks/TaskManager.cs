@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+
 using UnityEngine;
 
 namespace exoLib.Tasks
@@ -12,7 +13,6 @@ namespace exoLib.Tasks
 		FixedUpdate,
 		LateUpdate,
 	}
-
 	/// <summary>
 	/// Allows the user to attach tasks that will be performed during the next pass specified by TaskPerformWhen.
 	/// 
@@ -62,7 +62,6 @@ namespace exoLib.Tasks
 		/// Tasks to be performed during LateUpdate
 		/// </summary>
 		private readonly Queue<Task> _lateUpdateTasks = new Queue<Task>(INITIAL_CAPACITY);
-
 		/// <summary>
 		/// Returns queue of tasks for given pass.
 		/// </summary>
@@ -94,7 +93,6 @@ namespace exoLib.Tasks
 				task.Invoke();
 			}
 		}
-
 		/// <summary>
 		/// Process all update tasks.
 		/// </summary>
@@ -102,7 +100,6 @@ namespace exoLib.Tasks
 		{
 			PerformTasks(TaskPerformWhen.Update);
 		}
-
 		/// <summary>
 		/// Process all fixedUpdate tasks.
 		/// </summary>
@@ -110,7 +107,6 @@ namespace exoLib.Tasks
 		{
 			PerformTasks(TaskPerformWhen.FixedUpdate);
 		}
-
 		/// <summary>
 		/// Process all lateUpdate tasks.
 		/// </summary>
@@ -118,7 +114,6 @@ namespace exoLib.Tasks
 		{
 			PerformTasks(TaskPerformWhen.LateUpdate);
 		}
-
 		/// <summary>
 		/// Enqueue task to be executed in the next pass of performWhen.
 		/// </summary>
