@@ -13,6 +13,16 @@ namespace exoLib.Diagnostics.Console
 	sealed class GameConsole : DebugConsole
 	{
 		/// <summary>
+		/// Internal GUI input field element name.
+		/// </summary>
+		private const string GUI_INPUT_FIELD = "inputField";
+
+		/// <summary>
+		/// Invalid (none) index.
+		/// </summary>
+		private const int INVALID_INDEX = -1;
+
+		/// <summary>
 		/// The key that will be used to toggle console visibility.
 		/// </summary>
 		public KeyCode OpenCloseKey = KeyCode.BackQuote;
@@ -33,6 +43,14 @@ namespace exoLib.Diagnostics.Console
 		private string _currentInput = string.Empty;
 
 		/// <summary>
+		/// Current suggestion (if any).
+		/// </summary>
+		private string _currentSuggestion = string.Empty;
+
+
+		private int _currentSuggestionIndex = -1;
+
+		/// <summary>
 		/// Current console output
 		/// </summary>
 		private readonly StringBuilder _currentOutput = new StringBuilder();
@@ -51,6 +69,11 @@ namespace exoLib.Diagnostics.Console
 		/// Are we clearing our input?
 		/// </summary>
 		private bool _shouldClear;
+
+		/// <summary>
+		/// Do we want to apply suggestion?
+		/// </summary>
+		private bool _applySuggestion = false;
 
 		/// <summary>
 		/// Scroll amount in the output field.
@@ -87,6 +110,14 @@ namespace exoLib.Diagnostics.Console
 
 			if (_shouldSubmit)
 			{
+				// If we have a suggestion, apply and clear what we have
+				if (!string.IsNullOrWhiteSpace(_currentSuggestion))
+				{
+					_currentInput = _currentSuggestion;
+					_currentSuggestion = string.Empty;
+					_currentSuggestionIndex = INVALID_INDEX;
+				}
+
 				// If string is empty or spaces only, clear it
 				// If not, submit it!
 				if (string.IsNullOrWhiteSpace(_currentInput))
@@ -103,11 +134,13 @@ namespace exoLib.Diagnostics.Console
 				_shouldClear = false;
 			}
 
+			// Clear suggestions if no input
+			if (string.IsNullOrWhiteSpace(_currentInput))
+				_suggestions.Clear();
 
 			// Parent update
 			base.Update();
 		}
-
 
 		/// <summary>
 		/// Draws the console GUI.
@@ -118,17 +151,22 @@ namespace exoLib.Diagnostics.Console
 			if (!IsOpen)
 				return;
 
-			bool _shouldMoveCaret = false;
+			// Should we move the caret?
+			bool moveCaret = false;
 			// Moves caret to end of current input field that keyboard has focus in
 			void moveCaretToEnd(string text)
 			{
 				var textEditor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
 				if (textEditor != null)
 				{
+					textEditor.text = text;
 					textEditor.cursorIndex = text.Length;
 					textEditor.SelectNone();
 				}
 			}
+
+			// If we had a suggestion and we backspaced, undo that change
+			bool undoBackspace = false;
 
 			// If console is open, we may want to handle inputs here,
 			// but process them only when update comes
@@ -144,11 +182,58 @@ namespace exoLib.Diagnostics.Console
 				if (currentEvent.keyCode == ClearKey)
 					_shouldClear = true;
 
-				if (currentEvent.keyCode == KeyCode.DownArrow)
-					_shouldMoveCaret = true;
+				if (currentEvent.keyCode == KeyCode.Space)
+				{
+					_applySuggestion = true;
 
+					// If we don't have a suggestion picked, yet
+					// there could be options, try picking the first one
+					if (_currentSuggestionIndex == INVALID_INDEX && _currentInput.Length > 0 && _suggestions.Count > 0)
+					{
+						_currentSuggestionIndex = 0;
+						_currentSuggestion = _suggestions[0];
+						_shouldClear = false;
+						moveCaret = true;
+					}
+				}
+
+				// browse suggestion (down)
+				if (currentEvent.keyCode == KeyCode.DownArrow)
+				{
+					// Select next suggestion
+					_currentSuggestionIndex = (int)Mathf.Repeat(_currentSuggestionIndex + 1, _suggestions.Count);
+					moveCaret = true;
+				}
+
+				// browse suggestion (up)
 				if (currentEvent.keyCode == KeyCode.UpArrow)
-					_shouldMoveCaret = true;
+				{
+					// Select previous suggestion
+					_currentSuggestionIndex = (int)Mathf.Repeat(_currentSuggestionIndex - 1, _suggestions.Count);
+					moveCaret = true;
+				}
+				
+				// Clear suggestions
+				if (currentEvent.keyCode == KeyCode.Backspace || currentEvent.keyCode == KeyCode.Escape)
+				{
+					// If we're removing a suggestion, revert changes done in current input
+					if (!string.IsNullOrWhiteSpace(_currentSuggestion))
+					{
+						// Revert backspace
+						undoBackspace = true;
+
+						// And clear the suggestions
+						_currentSuggestionIndex = INVALID_INDEX;
+						_currentSuggestion = string.Empty;
+
+						// We will not clear the input field,
+						// we will only remove the suggestion
+						_shouldClear = false;
+
+						// Move the caret to end too
+						moveCaret = true;
+					}
+				}
 			}
 
 			var consoleRect = GetConsoleRect();
@@ -176,30 +261,65 @@ namespace exoLib.Diagnostics.Console
 				GUILayout.EndScrollView();
 
 				// Set name of the input field element
-				const string inputFieldName = "InputField";
-				GUI.SetNextControlName(inputFieldName);
+				GUI.SetNextControlName(GUI_INPUT_FIELD);
 
 				// Input field with submit button
 				GUILayout.BeginHorizontal();
 				{
+					// Fetch new input
 					var newInput = _currentInput;
-					newInput = GUILayout.TextField(newInput);
 
-					if (GUILayout.Button("Submit", GUILayout.MaxWidth(64)))
+					// Select suggestion, if there are available ones
+					int suggestionsCount = _suggestions.Count;
+					if (_currentSuggestionIndex > -1 && suggestionsCount > 0 && _currentSuggestionIndex < suggestionsCount)
+						_currentSuggestion = _suggestions[_currentSuggestionIndex].ToLowerInvariant();
+					else
+						_currentSuggestion = string.Empty;
+
+					// Write suggestion if any, otherwise update text
+					if (!string.IsNullOrWhiteSpace(_currentSuggestion))
 					{
-						_shouldSubmit = true;
+						GUILayout.TextArea(_currentSuggestion);
+						moveCaret = true;
+
+						if (_applySuggestion)
+						{
+							newInput = _currentSuggestion;
+							_currentSuggestionIndex = -1;
+							_currentSuggestion = string.Empty;
+							_applySuggestion = false;
+						}
 					}
+					else
+						newInput = GUILayout.TextField(newInput);
+
+
+					// Submit on enter
+					if (GUILayout.Button("Submit", GUILayout.MaxWidth(64)))
+						_shouldSubmit = true;
 
 					// And focus the input field
-					GUI.FocusControl(inputFieldName);
+					GUI.FocusControl(GUI_INPUT_FIELD);
+
+					// If we were undoing backSpace, use previous input
+					if (undoBackspace)
+					{
+						newInput = _lastInput;
+						moveCaret = true;
+					}
 
 					// This will prevent from writing garbage into input
 					if (!_shouldSubmit && !_shouldToggle)
 						_currentInput = newInput;
 
-
-					if (_shouldMoveCaret)
-						moveCaretToEnd(_currentInput);
+					// Move to end if we are supposed to
+					if (moveCaret)
+					{
+						if (!string.IsNullOrWhiteSpace(_currentSuggestion))
+							moveCaretToEnd(_currentSuggestion);
+						else
+							moveCaretToEnd(_currentInput);
+					}
 				}
 				GUILayout.EndHorizontal();
 			}
@@ -210,9 +330,8 @@ namespace exoLib.Diagnostics.Console
 				DrawSuggestions(consoleRect, _currentInput);
 
 			_lastInput = _currentInput;
+			// Clear previous suggestions
 		}
-
-
 
 		/// <summary>
 		/// Draws and handles input for auto completion.
