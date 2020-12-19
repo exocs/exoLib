@@ -1,8 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
+using System.Collections.Generic;
 
 using UnityEngine;
+
+using exoLib.Collections.Generic;
 
 namespace exoLib.Diagnostics.Console
 {
@@ -21,6 +23,10 @@ namespace exoLib.Diagnostics.Console
 		/// Invalid (none) index.
 		/// </summary>
 		private const int INVALID_INDEX = -1;
+		/// <summary>
+		/// Maximum number of items kept in the command history.
+		/// </summary>
+		private const int COMMAND_HISTORY_MAX = 8;
 		/// <summary>
 		/// The key that will be used to toggle console visibility.
 		/// </summary>
@@ -86,6 +92,10 @@ namespace exoLib.Diagnostics.Console
 		/// </summary>
 		private GUIStyle _windowStyle;
 		/// <summary>
+		/// History of executed commands.
+		/// </summary>
+		private CircularBuffer<string> _commandHistory = new CircularBuffer<string>(COMMAND_HISTORY_MAX);
+		/// <summary>
 		/// Handle input for GUI
 		/// </summary>
 		protected override void Update()
@@ -103,6 +113,7 @@ namespace exoLib.Diagnostics.Console
 				_shouldToggle = false;
 			}
 
+			// Submit command
 			if (_shouldSubmit)
 			{
 				// If we have a suggestion, apply and clear what we have
@@ -118,11 +129,18 @@ namespace exoLib.Diagnostics.Console
 				if (string.IsNullOrWhiteSpace(_currentInput))
 					_currentInput = string.Empty;
 				else
+				{
+					// Store current command to history
+					_commandHistory.Add(_currentInput);
+
+					// Submit the item
 					Submit();
+				}
 
 				_shouldSubmit = false;
 			}
 
+			// Clear input field
 			if (_shouldClear)
 			{
 				_currentInput = string.Empty;
@@ -131,12 +149,17 @@ namespace exoLib.Diagnostics.Console
 
 			// Clear suggestions if no input
 			if (string.IsNullOrWhiteSpace(_currentInput))
+			{
 				_suggestions.Clear();
+
+				// Use the history instead :)
+				if (!_commandHistory.IsEmpty)
+					_suggestions.AddRange(_commandHistory.Peek(_commandHistory.Count));
+			}
 
 			// Parent update
 			base.Update();
 		}
-
 		/// <summary>
 		/// Draws the console GUI.
 		/// </summary>
