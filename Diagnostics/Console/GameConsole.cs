@@ -154,7 +154,15 @@ namespace exoLib.Diagnostics.Console
 
 				// Use the history instead :)
 				if (!_commandHistory.IsEmpty)
-					_suggestions.AddRange(_commandHistory.Peek(_commandHistory.Count));
+				{
+					int count = _commandHistory.Count;
+					if (count > 0) 
+					{
+						var history = _commandHistory.Peek(count);
+						for (int i = count - 1; i >= 0; i--)
+							_suggestions.Add(history[i]);
+					}
+				}
 			}
 
 			// Parent update
