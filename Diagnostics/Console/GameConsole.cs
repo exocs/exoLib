@@ -674,15 +674,15 @@ namespace exoLib.Diagnostics.Console
 			switch (type)
 			{
 				case LogType.Log:
-					_currentOutput.Append(ColorUtility.ToHtmlStringRGB(ConsoleColors.LogColor));
+					_currentOutput.Append(ColorUtility.ToHtmlStringRGBA(ConsoleColors.LogColor));
 					break;
 				case LogType.Warning:
-					_currentOutput.Append(ColorUtility.ToHtmlStringRGB(ConsoleColors.WarningColor));
+					_currentOutput.Append(ColorUtility.ToHtmlStringRGBA(ConsoleColors.WarningColor));
 					break;
 				case LogType.Error:
 				case LogType.Assert:
 				case LogType.Exception:
-					_currentOutput.Append(ColorUtility.ToHtmlStringRGB(ConsoleColors.ErrorColor));
+					_currentOutput.Append(ColorUtility.ToHtmlStringRGBA(ConsoleColors.ErrorColor));
 					break;
 			}
 
@@ -711,13 +711,26 @@ namespace exoLib.Diagnostics.Console
 			base.ClearConsole();
 		}
 		/// <summary>
+		/// Handles color changes within the console GUI.
+		/// </summary>
+		protected override void OnColorsChanged(Colors previousColors, Colors newColors)
+		{
+			// Replace all markups in the output builder
+			_currentOutput.Replace($"<color=#{ColorUtility.ToHtmlStringRGBA(previousColors.EchoColor)}>", $"<color=#{ColorUtility.ToHtmlStringRGBA(newColors.EchoColor)}>");
+			_currentOutput.Replace($"<color=#{ColorUtility.ToHtmlStringRGBA(previousColors.ErrorColor)}>", $"<color=#{ColorUtility.ToHtmlStringRGBA(newColors.ErrorColor)}>");
+			_currentOutput.Replace($"<color=#{ColorUtility.ToHtmlStringRGBA(previousColors.LogColor)}>", $"<color=#{ColorUtility.ToHtmlStringRGBA(newColors.LogColor)}>");
+			_currentOutput.Replace($"<color=#{ColorUtility.ToHtmlStringRGBA(previousColors.WarningColor)}>", $"<color=#{ColorUtility.ToHtmlStringRGBA(newColors.WarningColor)}>");
+
+			base.OnColorsChanged(previousColors, newColors);
+		}
+		/// <summary>
 		/// Submits current input to the console.
 		/// </summary>
 		private void Submit()
 		{
 			// Echo user input
 			if (EchoInput)
-				Debug.Log($"<color=#{ColorUtility.ToHtmlStringRGB(ConsoleColors.EchoColor)}>> {_currentInput}</color>");
+				Debug.Log($"<color=#{ColorUtility.ToHtmlStringRGBA(ConsoleColors.EchoColor)}>> {_currentInput}</color>");
 
 			// Execute current command
 			Execute(_currentInput);

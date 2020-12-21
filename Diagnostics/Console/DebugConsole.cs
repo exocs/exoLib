@@ -28,7 +28,7 @@ namespace exoLib.Diagnostics.Console
 			/// </summary>
 			public Color BackgroundColor;
 			/// <summary>
-			/// Suggestions background console color.
+			/// Suggestions box background console color.
 			/// </summary>
 			public Color SuggestionsBackgroundColor;
 			/// <summary>
@@ -49,7 +49,7 @@ namespace exoLib.Diagnostics.Console
 			public Color EchoColor;
 
 			/// <summary>
-			/// Returns default console settings.
+			/// Returns default console colors.
 			/// </summary>
 			public static Colors Default
 			{
@@ -63,6 +63,71 @@ namespace exoLib.Diagnostics.Console
 						LogColor = contentColor,
 						BackgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.75f), // dark gray
 						SuggestionsBackgroundColor = new Color(0.05f, 0.05f, 0.05f, 0.9f),
+						WarningColor = Color.Lerp(Color.red, Color.yellow, 0.5f), // orange
+						ErrorColor = Color.red,
+						EchoColor = Color.gray
+					};
+					return colors;
+				}
+			}
+
+			/// <summary>
+			/// Returns the green theme.
+			/// </summary>
+			public static Colors GreenTheme
+			{
+				get
+				{
+					var colors = new Colors
+					{
+						ContentColor = new Color(0.275f, 1.0f, 0.0f, 1.0f),
+						LogColor = new Color(0.43f, 0.725f, 0.28f, 1.0f),
+						BackgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.75f), // dark gray
+						SuggestionsBackgroundColor = new Color(0.05f, 0.05f, 0.05f, 0.9f),
+						WarningColor = Color.Lerp(Color.red, Color.yellow, 0.5f), // orange
+						ErrorColor = Color.red,
+						EchoColor = Color.gray
+					};
+					return colors;
+				}
+			}
+
+			/// <summary>
+			/// Returns the orange theme.
+			/// </summary>
+			public static Colors OrangeTheme
+			{
+				get
+				{
+					//var contentColor = new Color(1.0f, 0.7f, 0.3f);
+					var colors = new Colors
+					{
+						ContentColor = new Color(1.0f, 0.63f, 0.0f, 1.0f),
+						LogColor = new Color(0.63f, 0.43f, 0.28f, 1.0f),
+						BackgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.75f), // dark gray
+						SuggestionsBackgroundColor = new Color(0.05f, 0.05f, 0.05f, 0.9f),
+						WarningColor = Color.Lerp(Color.red, Color.yellow, 0.5f), // orange
+						ErrorColor = Color.red,
+						EchoColor = Color.gray
+					};
+					return colors;
+				}
+			}
+
+			/// <summary>
+			/// Returns the inverted theme.
+			/// </summary>
+			public static Colors InvertedTheme
+			{
+				get
+				{
+					//var contentColor = new Color(1.0f, 0.7f, 0.3f);
+					var colors = new Colors
+					{
+						ContentColor = Color.black,
+						LogColor = Color.black,
+						BackgroundColor = new Color(0.85f, 0.85f, 0.85f, 0.85f), // dark gray
+						SuggestionsBackgroundColor = new Color(0.925f, 0.925f, 0.925f, 0.70f),
 						WarningColor = Color.Lerp(Color.red, Color.yellow, 0.5f), // orange
 						ErrorColor = Color.red,
 						EchoColor = Color.gray
@@ -129,9 +194,26 @@ namespace exoLib.Diagnostics.Console
 		/// </summary>
 		public virtual Vector2 Position { get; set; } = Vector2.zero;
 		/// <summary>
+		/// Colors used by the console.
+		/// </summary>
+		private Colors _consoleColors = Colors.Default;
+		/// <summary>
 		/// Console colors provided via <see cref="Colors"/> struct.
 		/// </summary>
-		public Colors ConsoleColors = Colors.Default;
+		public Colors ConsoleColors
+		{
+			get
+			{
+				return _consoleColors;
+			}
+
+			set
+			{
+				var previous = _consoleColors;
+				_consoleColors = value;
+				OnColorsChanged(previous, _consoleColors);
+			}
+		}
 		/// <summary>
 		/// To not reallocate the comamnds dictionary intially, we will begin with fixed capacity.
 		/// </summary>
@@ -235,6 +317,13 @@ namespace exoLib.Diagnostics.Console
 		/// Attached to application log event.
 		/// </summary>
 		protected virtual void OnLogMessageReceived(string condition, string stackTrace, LogType type)
+		{
+
+		}
+		/// <summary>
+		/// Called when colors for the console are changed.
+		/// </summary>
+		protected virtual void OnColorsChanged(Colors previousColors, Colors newColors)
 		{
 
 		}
