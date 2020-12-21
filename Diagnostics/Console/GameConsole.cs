@@ -80,6 +80,10 @@ namespace exoLib.Diagnostics.Console
 		/// </summary>
 		private Vector2 _scrollAmount;
 		/// <summary>
+		/// Scroll amount in the suggestions box.
+		/// </summary>
+		private Vector2 _suggestionsScrollAmount;
+		/// <summary>
 		/// Suggestions for autocompletion.
 		/// </summary>
 		private readonly List<string> _suggestions = new List<string>();
@@ -90,11 +94,53 @@ namespace exoLib.Diagnostics.Console
 		/// <summary>
 		/// Main window GUI style.
 		/// </summary>
-		private GUIStyle _windowStyle;
+		public GUIStyle _windowStyle;
+		/// <summary>
+		/// Label style.
+		/// </summary>
+		public GUIStyle _labelStyle;
+		/// <summary>
+		/// Buttons GUI style.
+		/// </summary>
+		public GUIStyle _buttonStyle;
+		/// <summary>
+		/// Style for text fields.
+		/// </summary>
+		public GUIStyle _textFieldStyle;
+		/// <summary>
+		/// Style for text fields.
+		/// </summary>
+		public GUIStyle _scrollViewStyle;
+		/// <summary>
+		/// Font used for all styles.
+		/// Will be applied on next OnGUI when set to anything not null.
+		/// </summary>
+		private Font _targetFont = null;
+		/// <summary>
+		/// Will be applied on next OnGUI when set to anything greater than zero.
+		/// </summary>
+		private int _targetFontSize = 0;
+		/// <summary>
+		/// Currently used font size.
+		/// </summary>
+		private int _currentFontSize = 0;
 		/// <summary>
 		/// History of executed commands.
 		/// </summary>
 		private CircularBuffer<string> _commandHistory = new CircularBuffer<string>(COMMAND_HISTORY_MAX);
+		/// <summary>
+		/// Initializes the console fonts.
+		/// </summary>
+		protected override void Awake()
+		{
+			// Default font
+			SetFontFace(null);
+			// Size 12
+			SetFontSize(12);
+
+			// Call parent awake
+			base.Awake();
+		}
 		/// <summary>
 		/// Handle input for GUI
 		/// </summary>
@@ -174,16 +220,97 @@ namespace exoLib.Diagnostics.Console
 				if (_windowStyle == null)
 				{
 					_windowStyle = new GUIStyle(GUI.skin.window);
+
+					// Create plain white texture that will be used for background
+					var texture = new Texture2D(1, 1);
+					texture.SetPixels(new Color[] { Color.white });
+					texture.Apply();
+					//texture.wrapMode = TextureWrapMode.Repeat;
+
+					// Apply texture for all states of the style
+					_windowStyle.active.background = texture;
+					_windowStyle.focused.background = texture;
+					_windowStyle.hover.background = texture;
+					_windowStyle.normal.background = texture;
+					_windowStyle.border = new RectOffset(0, 0, 0, 0);
+					_windowStyle.margin = new RectOffset(1, 1, 1, 1);
+					// Set font
+					_windowStyle.font = _targetFont;
+
 				}
 				if (_titleStyle == null)
 				{
 					_titleStyle = new GUIStyle(GUI.skin.label)
 					{
-						fontSize = 12,
-						clipping = TextClipping.Overflow
+						clipping = TextClipping.Clip,
+						fontStyle = FontStyle.Bold,
+						fontSize = 16,
+						font = _targetFont,
 					};
+					_titleStyle.active.background = null;
+					_titleStyle.focused.background = null;
+					_titleStyle.hover.background = null;
+					_titleStyle.normal.background = null;
+					_titleStyle.margin = new RectOffset(1, 1, 1, 1);
+				}
+				if (_buttonStyle == null)
+				{
+					_buttonStyle = new GUIStyle(GUI.skin.button)
+					{
+						font = _targetFont
+					};
+					_buttonStyle.active.background = null;
+					_buttonStyle.focused.background = null;
+					_buttonStyle.hover.background = null;
+					_buttonStyle.normal.background = null;
+					_buttonStyle.margin = new RectOffset(1, 1, 1, 1);
+				}
+				if (_textFieldStyle == null)
+				{
+					_textFieldStyle = new GUIStyle(GUI.skin.textField)
+					{
+						font = _targetFont
+					};
+					_textFieldStyle.active.background = null;
+					_textFieldStyle.focused.background = null;
+					_textFieldStyle.hover.background = null;
+					_textFieldStyle.normal.background = null;
+					_textFieldStyle.margin = new RectOffset(1, 1, 1, 1);
+				}
+				if (_labelStyle == null)
+				{
+					_labelStyle = new GUIStyle(GUI.skin.label)
+					{
+						font = _targetFont
+					};
+					_labelStyle.margin = new RectOffset(1, 1, 0, 0);
+				}
+				if (_scrollViewStyle == null)
+				{
+					_scrollViewStyle = new GUIStyle(GUI.skin.scrollView)
+					{
+						font = _targetFont,
+					};
+					_scrollViewStyle.active.background = null;
+					_scrollViewStyle.focused.background = null;
+					_scrollViewStyle.hover.background = null;
+					_scrollViewStyle.normal.background = null;
+					_scrollViewStyle.margin = new RectOffset(1, 1, 3, 3);
 				}
 			}
+
+			// Apply font
+			if (_targetFont != null)
+			{
+				ApplyFontFace(_targetFont);
+				_targetFont = null;
+			}
+			if (_targetFontSize > 0)
+			{
+				ApplyFontSize(_targetFontSize);
+				_targetFontSize = 0;
+			}
+
 
 			// Console is closed, we will not draw anything
 			if (!IsOpen)
@@ -252,7 +379,7 @@ namespace exoLib.Diagnostics.Console
 				{
 					// Select previous suggestion
 					if (_currentSuggestionIndex == INVALID_INDEX)
-						_currentSuggestionIndex = _suggestions.Count-1;
+						_currentSuggestionIndex = _suggestions.Count - 1;
 					else
 						_currentSuggestionIndex = (int)Mathf.Repeat(_currentSuggestionIndex - 1, _suggestions.Count);
 
@@ -293,18 +420,35 @@ namespace exoLib.Diagnostics.Console
 			GUI.color = ConsoleColors.BackgroundColor;
 			GUI.Box(consoleRect, GUIContent.none, _windowStyle);
 
+			// Take the content color, but reduce the alpha
+			var separatorColor = ConsoleColors.ContentColor;
+			separatorColor.a *= 0.75f;
+			GUI.color = separatorColor;
+			// Draw seperator line
+			float titleSize = _titleStyle.fontSize + 4;
+			// Starts at where label is going to end, + 1% margin from both horizontal sides, height of 1 pixel
+			const float margin = 0.0075f;
+			const float separatorHeight = 1;
+			var seperatorRect = new Rect(
+				consoleRect.x + (0.5f * margin * consoleRect.width),
+				consoleRect.y + titleSize,
+				consoleRect.width - (margin * consoleRect.width),
+				separatorHeight);
+			GUI.DrawTexture(seperatorRect, _windowStyle.normal.background, ScaleMode.StretchToFill);
+
 			// Start drawing the console window
 			GUILayout.BeginArea(consoleRect);
 			{
 				// Use the foreground color from now on
 				GUI.color = ConsoleColors.ContentColor;
+
 				// Write the console title
-				GUILayout.Label(Application.productName + " Development Console", _titleStyle, GUILayout.Height(14));
+				GUILayout.Label(Application.productName + " Development Console", _titleStyle, GUILayout.Height(titleSize));
 
 				// Scroll view for content (console output)
-				_scrollAmount = GUILayout.BeginScrollView(_scrollAmount);
+				_scrollAmount = GUILayout.BeginScrollView(_scrollAmount, false, false, GUIStyle.none, GUIStyle.none, _scrollViewStyle);
 				{
-					GUILayout.Label(_currentOutput.ToString());
+					GUILayout.Label(_currentOutput.ToString(), _labelStyle);
 				}
 				GUILayout.EndScrollView();
 
@@ -327,9 +471,7 @@ namespace exoLib.Diagnostics.Console
 					// Write suggestion if any, otherwise update text
 					if (!string.IsNullOrWhiteSpace(_currentSuggestion))
 					{
-						GUILayout.TextArea(_currentSuggestion);
-						moveCaret = true;
-
+						GUILayout.TextField(_currentSuggestion, _textFieldStyle);
 						if (_applySuggestion)
 						{
 							newInput = _currentSuggestion;
@@ -339,11 +481,11 @@ namespace exoLib.Diagnostics.Console
 						}
 					}
 					else
-						newInput = GUILayout.TextField(newInput);
+						newInput = GUILayout.TextField(newInput, _textFieldStyle);
 
-
-					// Submit on enter
-					if (GUILayout.Button("Submit", GUILayout.MaxWidth(64)))
+					// Submit button
+					int maxWidth = Math.Min((_currentFontSize * 4), 256);
+					if (GUILayout.Button("Submit", _buttonStyle, GUILayout.MaxWidth(maxWidth)))
 						_shouldSubmit = true;
 
 					// And focus the input field
@@ -393,18 +535,40 @@ namespace exoLib.Diagnostics.Console
 				// Pick suggestions
 				// TODO: Does not have to be picked all the time
 				_suggestions.Clear();
-				count = GetAutocompletionSuggestions(input, _suggestions);
+				count = GetAutocompletionSuggestions(input, _suggestions, 64);
+
+				// Reset scroll
+				//_suggestionsScrollAmount = Vector2.zero;
 			}
 
-			// Dont draw anything
+			// Dont draw anything and reset scroll
 			if (count == 0)
 				return;
 
-			const int elementHeight = 24;
 			// Draw suggestions
-			var autoCompletionRect = new Rect(consoleRect.min.x, consoleRect.max.y + 1, consoleRect.width, count * elementHeight);
+			var remainingHeight = Screen.height - consoleRect.max.y;
+			var elementHeight = (int)(_currentFontSize * 1.7f);
+			var targetHeight = elementHeight * count;
+			// Based on whether expanding down (remaining height > 0) or up, we'll create rect
+			Rect autoCompletionRect;
+			if (remainingHeight > elementHeight)
+			{
+				autoCompletionRect = new Rect(consoleRect.min.x, consoleRect.max.y, consoleRect.width, (int)Math.Min(targetHeight, remainingHeight));
+			}
+			else
+			{
+				// TODO:  This value is hardcoded and should be calculated properly once styles are updated
+				remainingHeight = (int)Math.Min(targetHeight, Screen.height - _currentFontSize);
+				autoCompletionRect = new Rect(
+					consoleRect.min.x,
+					consoleRect.max.y - remainingHeight - _currentFontSize,
+					consoleRect.width,
+					remainingHeight - _currentFontSize);
+			}
+
 			// Draw background
-			GUI.Box(autoCompletionRect, GUIContent.none);
+			GUI.color = ConsoleColors.SuggestionsBackgroundColor;
+			GUI.Box(autoCompletionRect, GUIContent.none, _windowStyle);
 
 			// Draw the content
 			GUI.color = ConsoleColors.ContentColor;
@@ -416,16 +580,16 @@ namespace exoLib.Diagnostics.Console
 			// Draw the layout
 			GUILayout.BeginArea(autoCompletionRect);
 			{
-				GUILayout.BeginVertical();
+				_suggestionsScrollAmount = GUILayout.BeginScrollView(_suggestionsScrollAmount, true, true, GUIStyle.none, GUIStyle.none, _scrollViewStyle, GUILayout.MaxHeight(targetHeight));
 				{
 					// Draw individual suggestions
 					for (int i = 0; i < count; i++)
 					{
 						var suggestion = _suggestions[i].ToLowerInvariant();
-						GUILayout.Label(suggestion, GUILayout.MaxHeight(elementHeight));
+						GUILayout.Label(suggestion, _labelStyle, GUILayout.MaxHeight(elementHeight));
 					}
 				}
-				GUILayout.EndVertical();
+				GUILayout.EndScrollView();
 			}
 			GUILayout.EndArea();
 		}
@@ -512,6 +676,48 @@ namespace exoLib.Diagnostics.Console
 
 			// Return the rect
 			return new Rect(xPosition, yPosition, width, height);
+		}
+		/// <summary>
+		/// Internal method for handling font face.
+		/// </summary>
+		private void ApplyFontFace(Font font)
+		{
+			_windowStyle.font = font;
+			_titleStyle.font = font;
+			_buttonStyle.font = font;
+			_labelStyle.font = font;
+			_textFieldStyle.font = font;
+			_labelStyle.font = font;
+			_scrollViewStyle.font = font;
+		}
+		/// <summary>
+		/// Internal method for handling font size.
+		/// </summary>
+		private void ApplyFontSize(int fontSize)
+		{
+			_windowStyle.fontSize = fontSize;
+			_titleStyle.fontSize = (int)(fontSize * 1.5f);
+			_buttonStyle.fontSize = fontSize;
+			_labelStyle.fontSize = fontSize;
+			_textFieldStyle.fontSize = fontSize;
+			_labelStyle.fontSize = fontSize;
+			_scrollViewStyle.fontSize = fontSize;
+
+			_currentFontSize = fontSize;
+		}
+		/// <summary>
+		/// Sets the desired font for all of the console GUI.
+		/// </summary>
+		public override void SetFontFace(Font font)
+		{
+			_targetFont = font;
+		}
+		/// <summary>
+		/// Sets the desired font size fo all of the console GUI.
+		/// </summary>
+		public override void SetFontSize(int fontSize)
+		{
+			_targetFontSize = fontSize;
 		}
 	}
 }

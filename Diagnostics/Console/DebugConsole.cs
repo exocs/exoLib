@@ -28,6 +28,10 @@ namespace exoLib.Diagnostics.Console
 			/// </summary>
 			public Color BackgroundColor;
 			/// <summary>
+			/// Suggestions background console color.
+			/// </summary>
+			public Color SuggestionsBackgroundColor;
+			/// <summary>
 			/// Default log console color.
 			/// </summary>
 			public Color LogColor;
@@ -57,10 +61,11 @@ namespace exoLib.Diagnostics.Console
 					{
 						ContentColor = contentColor,
 						LogColor = contentColor,
-						BackgroundColor = Color.black,
+						BackgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.75f), // dark gray
+						SuggestionsBackgroundColor = new Color(0.05f, 0.05f, 0.05f, 0.9f),
 						WarningColor = Color.Lerp(Color.red, Color.yellow, 0.5f), // orange
 						ErrorColor = Color.red,
-						EchoColor = Color.yellow
+						EchoColor = Color.gray
 					};
 					return colors;
 				}
@@ -369,6 +374,19 @@ namespace exoLib.Diagnostics.Console
 			}
 
 			return false;
+		}
+		/// <summary>
+		/// Sets the desired font for the console.
+		/// Never works for headless console. (// TODO:  ?)
+		/// </summary>
+		public virtual void SetFontFace(Font font)
+		{
+		}
+		/// <summary>
+		/// Sets the desired font size for all of the console GUI.
+		/// Never works for headless console. (// TODO:  ?)
+		public virtual void SetFontSize(int fontSize)
+		{
 		}
 	}
 }
