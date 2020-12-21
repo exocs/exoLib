@@ -230,16 +230,19 @@ namespace exoLib.Diagnostics.Console
 			// Has to be done from inside of GUI.
 			if (!_stylesCreated)
 			{
+				// Create plain white texture that will be used for background
+				var texture = new Texture2D(1, 1);
+				texture.SetPixels(new Color[] { Color.white });
+				texture.Apply();
+
+				// Alternate texture that has darker color
+				var altTexture = new Texture2D(1, 1);
+				altTexture.SetPixels(new Color[] { new Color(0.2f, 0.2f, 0.2f, 0.6f) });
+				altTexture.Apply();
+
 				if (_windowStyle == null)
 				{
 					_windowStyle = new GUIStyle(GUI.skin.window);
-
-					// Create plain white texture that will be used for background
-					var texture = new Texture2D(1, 1);
-					texture.SetPixels(new Color[] { Color.white });
-					texture.Apply();
-					//texture.wrapMode = TextureWrapMode.Repeat;
-
 					// Apply texture for all states of the style
 					_windowStyle.active.background = texture;
 					_windowStyle.focused.background = texture;
@@ -260,10 +263,10 @@ namespace exoLib.Diagnostics.Console
 						fontSize = 16,
 						font = _targetFont,
 					};
-					_titleStyle.active.background = null;
-					_titleStyle.focused.background = null;
-					_titleStyle.hover.background = null;
-					_titleStyle.normal.background = null;
+					_titleStyle.active.background = altTexture;
+					_titleStyle.focused.background = altTexture;
+					_titleStyle.hover.background = altTexture;
+					_titleStyle.normal.background = altTexture;
 					_titleStyle.margin = new RectOffset(1, 1, 1, 1);
 				}
 				if (_buttonStyle == null)
@@ -272,10 +275,10 @@ namespace exoLib.Diagnostics.Console
 					{
 						font = _targetFont
 					};
-					_buttonStyle.active.background = null;
-					_buttonStyle.focused.background = null;
-					_buttonStyle.hover.background = null;
-					_buttonStyle.normal.background = null;
+					_buttonStyle.active.background = altTexture;
+					_buttonStyle.focused.background = altTexture;
+					_buttonStyle.hover.background = altTexture;
+					_buttonStyle.normal.background = altTexture;
 					_buttonStyle.margin = new RectOffset(1, 1, 1, 1);
 				}
 				if (_textFieldStyle == null)
@@ -284,10 +287,14 @@ namespace exoLib.Diagnostics.Console
 					{
 						font = _targetFont
 					};
-					_textFieldStyle.active.background = null;
-					_textFieldStyle.focused.background = null;
-					_textFieldStyle.hover.background = null;
-					_textFieldStyle.normal.background = null;
+					_textFieldStyle.active.background = altTexture;
+					_textFieldStyle.active.textColor = Color.white;
+					_textFieldStyle.focused.background = altTexture;
+					_textFieldStyle.focused.textColor = Color.white;
+					_textFieldStyle.hover.background = altTexture;
+					_textFieldStyle.hover.textColor = Color.white;
+					_textFieldStyle.normal.background = altTexture;
+					_textFieldStyle.normal.textColor = Color.white;
 					_textFieldStyle.margin = new RectOffset(1, 1, 1, 1);
 				}
 				if (_labelStyle == null)
@@ -384,9 +391,8 @@ namespace exoLib.Diagnostics.Console
 						moveCaret = true;
 					}
 				}
-
 				// browse suggestion (down)
-				if (currentEvent.keyCode == KeyCode.DownArrow)
+				else if (currentEvent.keyCode == KeyCode.DownArrow)
 				{
 					// Select next suggestion
 					if (_currentSuggestionIndex == INVALID_INDEX)
@@ -396,9 +402,8 @@ namespace exoLib.Diagnostics.Console
 
 					moveCaret = true;
 				}
-
 				// browse suggestion (up)
-				if (currentEvent.keyCode == KeyCode.UpArrow)
+				else if (currentEvent.keyCode == KeyCode.UpArrow)
 				{
 					// Select previous suggestion
 					if (_currentSuggestionIndex == INVALID_INDEX)
@@ -408,9 +413,8 @@ namespace exoLib.Diagnostics.Console
 
 					moveCaret = true;
 				}
-
 				// Clear suggestions
-				if (currentEvent.keyCode == KeyCode.Backspace || currentEvent.keyCode == KeyCode.Escape)
+				else if (currentEvent.keyCode == KeyCode.Backspace || currentEvent.keyCode == KeyCode.Escape)
 				{
 					// If we're removing a suggestion, revert changes done in current input
 					if (!string.IsNullOrWhiteSpace(_currentSuggestion))
@@ -429,6 +433,34 @@ namespace exoLib.Diagnostics.Console
 						// Move the caret to end too
 						moveCaret = true;
 					}
+				}
+				// Any other key, if suggestions are up, clear them
+				else
+				{
+					_currentSuggestion = string.Empty;
+					_currentSuggestionIndex = INVALID_INDEX;
+				}
+			}
+
+			// We should handle different commands specially when suggestions are up
+			if (currentEvent.type == EventType.ValidateCommand)
+			{
+				if (currentEvent.commandName == "Cut")
+				{
+					// When we don't have any suggestion, procceeed normally
+					if (_currentSuggestionIndex == INVALID_INDEX && string.IsNullOrEmpty(_currentSuggestion))
+					{
+						currentEvent.Use();
+					}
+					else
+					{
+						// We are cutting from a suggestion here,
+						// so cut what we have selected and clear the input
+						currentEvent.Use();
+						_shouldClear = true;
+					}
+
+					moveCaret = true;
 				}
 			}
 
@@ -449,13 +481,12 @@ namespace exoLib.Diagnostics.Console
 			GUI.color = separatorColor;
 			// Draw seperator line
 			float titleSize = _titleStyle.fontSize + 0.4f * _titleStyle.fontSize;
-			// Starts at where label is going to end, + 1% margin from both horizontal sides, height of 1 pixel
-			const float margin = 0.0075f;
+			// Starts at where label is going to end
 			const float separatorHeight = 1;
 			var seperatorRect = new Rect(
-				consoleRect.x + (0.5f * margin * consoleRect.width),
+				consoleRect.x,
 				consoleRect.y + titleSize,
-				consoleRect.width - (margin * consoleRect.width),
+				consoleRect.width,
 				separatorHeight);
 			GUI.DrawTexture(seperatorRect, _windowStyle.normal.background, ScaleMode.StretchToFill);
 
