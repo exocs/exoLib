@@ -115,6 +115,28 @@ namespace exoLib.Diagnostics.Console
 			}
 
 			/// <summary>
+			/// Returns the blue theme.
+			/// </summary>
+			public static Colors BlueTheme
+			{
+				get
+				{
+					//var contentColor = new Color(1.0f, 0.7f, 0.3f);
+					var colors = new Colors
+					{
+						ContentColor = new Color(0.0f, 0.63f, 1.0f, 1.0f),
+						LogColor = new Color(0.1f, 0.6f, 0.85f),
+						BackgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.75f), // dark gray
+						SuggestionsBackgroundColor = new Color(0.05f, 0.05f, 0.05f, 0.9f),
+						WarningColor = Color.Lerp(Color.red, Color.yellow, 0.5f), // orange
+						ErrorColor = Color.red,
+						EchoColor = Color.gray
+					};
+					return colors;
+				}
+			}
+
+			/// <summary>
 			/// Returns the inverted theme.
 			/// </summary>
 			public static Colors InvertedTheme
