@@ -152,16 +152,11 @@ namespace exoLib.Diagnostics.Console
 			{
 				_suggestions.Clear();
 
-				// Use the history instead :)
+				// Use history for suggestions
 				if (!_commandHistory.IsEmpty)
 				{
-					int count = _commandHistory.Count;
-					if (count > 0) 
-					{
-						var history = _commandHistory.Peek(count);
-						for (int i = count - 1; i >= 0; i--)
-							_suggestions.Add(history[i]);
-					}
+					if (_commandHistory.Count > 0)
+						_suggestions.AddRange(_commandHistory);
 				}
 			}
 
@@ -244,7 +239,11 @@ namespace exoLib.Diagnostics.Console
 				if (currentEvent.keyCode == KeyCode.DownArrow)
 				{
 					// Select next suggestion
-					_currentSuggestionIndex = (int)Mathf.Repeat(_currentSuggestionIndex + 1, _suggestions.Count);
+					if (_currentSuggestionIndex == INVALID_INDEX)
+						_currentSuggestionIndex = 0;
+					else
+						_currentSuggestionIndex = (int)Mathf.Repeat(_currentSuggestionIndex + 1, _suggestions.Count);
+
 					moveCaret = true;
 				}
 
@@ -252,7 +251,11 @@ namespace exoLib.Diagnostics.Console
 				if (currentEvent.keyCode == KeyCode.UpArrow)
 				{
 					// Select previous suggestion
-					_currentSuggestionIndex = (int)Mathf.Repeat(_currentSuggestionIndex - 1, _suggestions.Count);
+					if (_currentSuggestionIndex == INVALID_INDEX)
+						_currentSuggestionIndex = _suggestions.Count-1;
+					else
+						_currentSuggestionIndex = (int)Mathf.Repeat(_currentSuggestionIndex - 1, _suggestions.Count);
+
 					moveCaret = true;
 				}
 
