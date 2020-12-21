@@ -18,7 +18,8 @@ Debug.Log("I will be performed during LateUpdate");
 ### DebugConsole
 Allows the usage of a in-game development console via simple API. The console is automagically managed and does not require any prefabs or additional scripts.
 The console is supported both in standalone, editor and headless builds.
-In editor and standalone the console can be opened via pressing the backquote '`' key. In headless mode the console is always present, as long as the instance is created.
+In editor and standalone the console can be opened via pressing the backquote (\`) key. In headless mode the console is always present, as long as the instance is created.
+The game console support auto-completion via suggestions and command history for ease of access.
 
 ##### Example usage:
 ```
