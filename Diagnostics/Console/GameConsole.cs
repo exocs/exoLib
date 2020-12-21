@@ -370,14 +370,16 @@ namespace exoLib.Diagnostics.Console
 			{
 				if (currentEvent.keyCode == OpenCloseKey)
 					_shouldToggle = true;
-
-				if (currentEvent.keyCode == SubmitKey || currentEvent.keyCode == AltSubmitKey)
+				else if (currentEvent.keyCode == SubmitKey || currentEvent.keyCode == AltSubmitKey)
+				{
+					// Set current suggestion as current input
+					if (_currentSuggestionIndex != INVALID_INDEX && !string.IsNullOrEmpty(_currentSuggestion))
+						_currentInput = _currentSuggestion;
 					_shouldSubmit = true;
-
-				if (currentEvent.keyCode == ClearKey)
+				}
+				else if (currentEvent.keyCode == ClearKey)
 					_shouldClear = true;
-
-				if (currentEvent.keyCode == KeyCode.Space)
+				else if (currentEvent.keyCode == KeyCode.Space)
 				{
 					_applySuggestion = true;
 
