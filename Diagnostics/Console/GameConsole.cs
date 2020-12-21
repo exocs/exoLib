@@ -36,6 +36,10 @@ namespace exoLib.Diagnostics.Console
 		/// </summary>
 		public KeyCode SubmitKey = KeyCode.Return;
 		/// <summary>
+		/// The key that will be used to submit requests.
+		/// </summary>
+		public KeyCode AltSubmitKey = KeyCode.KeypadEnter;
+		/// <summary>
 		/// The key that will be used to clear our input.
 		/// </summary>
 		public KeyCode ClearKey = KeyCode.Escape;
@@ -94,23 +98,31 @@ namespace exoLib.Diagnostics.Console
 		/// <summary>
 		/// Main window GUI style.
 		/// </summary>
-		public GUIStyle _windowStyle;
+		private GUIStyle _windowStyle;
 		/// <summary>
 		/// Label style.
 		/// </summary>
-		public GUIStyle _labelStyle;
+		private GUIStyle _labelStyle;
+		/// <summary>
+		/// Label style.
+		/// </summary>
+		private GUIStyle _suggestionLabelStyle;
 		/// <summary>
 		/// Buttons GUI style.
 		/// </summary>
-		public GUIStyle _buttonStyle;
+		private GUIStyle _buttonStyle;
 		/// <summary>
 		/// Style for text fields.
 		/// </summary>
-		public GUIStyle _textFieldStyle;
+		private GUIStyle _textFieldStyle;
 		/// <summary>
 		/// Style for text fields.
 		/// </summary>
-		public GUIStyle _scrollViewStyle;
+		private GUIStyle _scrollViewStyle;
+		/// <summary>
+		/// Were styles created already, or not?
+		/// </summary>
+		private bool _stylesCreated = false;
 		/// <summary>
 		/// Font used for all styles.
 		/// Will be applied on next OnGUI when set to anything not null.
@@ -216,6 +228,7 @@ namespace exoLib.Diagnostics.Console
 		{
 			// Initialize styles.
 			// Has to be done from inside of GUI.
+			if (!_stylesCreated)
 			{
 				if (_windowStyle == null)
 				{
@@ -285,6 +298,14 @@ namespace exoLib.Diagnostics.Console
 					};
 					_labelStyle.margin = new RectOffset(1, 1, 0, 0);
 				}
+				if (_suggestionLabelStyle == null)
+				{
+					_suggestionLabelStyle = new GUIStyle(_labelStyle);
+					_suggestionLabelStyle.normal.textColor = Color.Lerp(Color.gray, Color.white, 0.35f);
+					_suggestionLabelStyle.hover.textColor = Color.white;
+					_suggestionLabelStyle.active.textColor = Color.white;
+					_suggestionLabelStyle.focused.textColor = Color.white;
+				}
 				if (_scrollViewStyle == null)
 				{
 					_scrollViewStyle = new GUIStyle(GUI.skin.scrollView)
@@ -297,6 +318,8 @@ namespace exoLib.Diagnostics.Console
 					_scrollViewStyle.normal.background = null;
 					_scrollViewStyle.margin = new RectOffset(1, 1, 3, 3);
 				}
+
+				_stylesCreated = true;
 			}
 
 			// Apply font
@@ -305,12 +328,12 @@ namespace exoLib.Diagnostics.Console
 				ApplyFontFace(_targetFont);
 				_targetFont = null;
 			}
+			// Apply font size
 			if (_targetFontSize > 0)
 			{
 				ApplyFontSize(_targetFontSize);
 				_targetFontSize = 0;
 			}
-
 
 			// Console is closed, we will not draw anything
 			if (!IsOpen)
@@ -341,7 +364,7 @@ namespace exoLib.Diagnostics.Console
 				if (currentEvent.keyCode == OpenCloseKey)
 					_shouldToggle = true;
 
-				if (currentEvent.keyCode == SubmitKey)
+				if (currentEvent.keyCode == SubmitKey || currentEvent.keyCode == AltSubmitKey)
 					_shouldSubmit = true;
 
 				if (currentEvent.keyCode == ClearKey)
@@ -425,7 +448,7 @@ namespace exoLib.Diagnostics.Console
 			separatorColor.a *= 0.75f;
 			GUI.color = separatorColor;
 			// Draw seperator line
-			float titleSize = _titleStyle.fontSize + 4;
+			float titleSize = _titleStyle.fontSize + 0.4f * _titleStyle.fontSize;
 			// Starts at where label is going to end, + 1% margin from both horizontal sides, height of 1 pixel
 			const float margin = 0.0075f;
 			const float separatorHeight = 1;
@@ -484,7 +507,7 @@ namespace exoLib.Diagnostics.Console
 						newInput = GUILayout.TextField(newInput, _textFieldStyle);
 
 					// Submit button
-					int maxWidth = Math.Min((_currentFontSize * 4), 256);
+					int maxWidth = Math.Min((_currentFontSize * 6), 256);
 					if (GUILayout.Button("Submit", _buttonStyle, GUILayout.MaxWidth(maxWidth)))
 						_shouldSubmit = true;
 
@@ -517,7 +540,10 @@ namespace exoLib.Diagnostics.Console
 
 			// if not empty, draw autocompletion
 			if (_currentInput.Length > 0)
-				DrawSuggestions(consoleRect, _currentInput);
+			{
+				if (DrawSuggestions(consoleRect, _currentInput))
+					moveCaretToEnd(_currentSuggestion);
+			}
 
 			// Store last input
 			_lastInput = _currentInput;
@@ -527,23 +553,23 @@ namespace exoLib.Diagnostics.Console
 		/// </summary>
 		/// <param name="consoleRect">Rect of the console to append to.</param>
 		/// <param name="input">Input text to find suggestions for</param>
-		private void DrawSuggestions(Rect consoleRect, string input)
+		/// <returns>True if used picked a suggestion directly, false otherwise.</returns>
+		private bool DrawSuggestions(Rect consoleRect, string input)
 		{
 			int count = _suggestions.Count;
 			if (_lastInput != input)
 			{
 				// Pick suggestions
-				// TODO: Does not have to be picked all the time
 				_suggestions.Clear();
-				count = GetAutocompletionSuggestions(input, _suggestions, 64);
-
-				// Reset scroll
-				//_suggestionsScrollAmount = Vector2.zero;
+				count = GetAutocompletionSuggestions(input, _suggestions);
 			}
 
 			// Dont draw anything and reset scroll
 			if (count == 0)
-				return;
+			{
+				_suggestionsScrollAmount = Vector2.zero;
+				return false;
+			}
 
 			// Draw suggestions
 			var remainingHeight = Screen.height - consoleRect.max.y;
@@ -577,6 +603,7 @@ namespace exoLib.Diagnostics.Console
 			autoCompletionRect.x += margin;
 			autoCompletionRect.width -= margin;
 
+			bool clicked = false;
 			// Draw the layout
 			GUILayout.BeginArea(autoCompletionRect);
 			{
@@ -586,12 +613,19 @@ namespace exoLib.Diagnostics.Console
 					for (int i = 0; i < count; i++)
 					{
 						var suggestion = _suggestions[i].ToLowerInvariant();
-						GUILayout.Label(suggestion, _labelStyle, GUILayout.MaxHeight(elementHeight));
+						if (GUILayout.Button(suggestion, _suggestionLabelStyle, GUILayout.MaxHeight(elementHeight)))
+						{
+							_currentSuggestion = suggestion;
+							_currentSuggestionIndex = i;
+							clicked = true;
+						}
 					}
 				}
 				GUILayout.EndScrollView();
 			}
 			GUILayout.EndArea();
+
+			return clicked;
 		}
 		/// <summary>
 		/// When a message is logged, it is appended to the output.
@@ -688,6 +722,7 @@ namespace exoLib.Diagnostics.Console
 			_labelStyle.font = font;
 			_textFieldStyle.font = font;
 			_labelStyle.font = font;
+			_suggestionLabelStyle.font = font;
 			_scrollViewStyle.font = font;
 		}
 		/// <summary>
@@ -701,6 +736,7 @@ namespace exoLib.Diagnostics.Console
 			_labelStyle.fontSize = fontSize;
 			_textFieldStyle.fontSize = fontSize;
 			_labelStyle.fontSize = fontSize;
+			_suggestionLabelStyle.fontSize = fontSize;
 			_scrollViewStyle.fontSize = fontSize;
 
 			_currentFontSize = fontSize;
