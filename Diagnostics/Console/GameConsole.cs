@@ -359,9 +359,8 @@ namespace exoLib.Diagnostics.Console
 					textEditor.SelectNone();
 				}
 			}
-
-			// If we had a suggestion and we backspaced, undo that change
-			bool undoBackspace = false;
+			// On the contrary, we might want to redo the backspace in certain cases
+			bool redoBackspace = false;
 
 			// If console is open, we may want to handle inputs here,
 			// but process them only when update comes
@@ -418,21 +417,11 @@ namespace exoLib.Diagnostics.Console
 				// Clear suggestions
 				else if (currentEvent.keyCode == KeyCode.Backspace || currentEvent.keyCode == KeyCode.Escape)
 				{
-					// If we're removing a suggestion, revert changes done in current input
+					// If we're removing a suggestion, apply changes done in current suggestion and apply it
 					if (!string.IsNullOrWhiteSpace(_currentSuggestion))
 					{
-						// Revert backspace
-						undoBackspace = true;
-
-						// And clear the suggestions
-						_currentSuggestionIndex = INVALID_INDEX;
-						_currentSuggestion = string.Empty;
-
-						// We will not clear the input field,
-						// we will only remove the suggestion
-						_shouldClear = false;
-
-						// Move the caret to end too
+						_applySuggestion = true;
+						redoBackspace = true;
 						moveCaret = true;
 					}
 				}
@@ -527,6 +516,9 @@ namespace exoLib.Diagnostics.Console
 					// Write suggestion if any, otherwise update text
 					if (!string.IsNullOrWhiteSpace(_currentSuggestion))
 					{
+						if (redoBackspace)
+							_currentSuggestion = _currentSuggestion.Substring(0, _currentSuggestion.Length - 1);
+
 						GUILayout.TextField(_currentSuggestion, _textFieldStyle);
 						if (_applySuggestion)
 						{
@@ -546,13 +538,6 @@ namespace exoLib.Diagnostics.Console
 
 					// And focus the input field
 					GUI.FocusControl(GUI_INPUT_FIELD);
-
-					// If we were undoing backSpace, use previous input
-					if (undoBackspace)
-					{
-						newInput = _lastInput;
-						moveCaret = true;
-					}
 
 					// This will prevent from writing garbage into input
 					if (!_shouldSubmit && !_shouldToggle)
