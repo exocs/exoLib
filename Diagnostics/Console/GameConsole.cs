@@ -414,22 +414,17 @@ namespace exoLib.Diagnostics.Console
 
 					moveCaret = true;
 				}
-				// Clear suggestions
-				else if (currentEvent.keyCode == KeyCode.Backspace || currentEvent.keyCode == KeyCode.Escape)
-				{
-					// If we're removing a suggestion, apply changes done in current suggestion and apply it
-					if (!string.IsNullOrWhiteSpace(_currentSuggestion))
-					{
-						_applySuggestion = true;
-						redoBackspace = true;
-						moveCaret = true;
-					}
-				}
 				// Any other key, if suggestions are up, clear them
 				else
 				{
-					_currentSuggestion = string.Empty;
-					_currentSuggestionIndex = INVALID_INDEX;
+					if (!string.IsNullOrWhiteSpace(_currentSuggestion))
+					{
+						if (currentEvent.keyCode == KeyCode.Backspace || currentEvent.keyCode == KeyCode.Escape)
+							redoBackspace = true;
+
+						_applySuggestion = true;
+						moveCaret = true;
+					}
 				}
 			}
 
