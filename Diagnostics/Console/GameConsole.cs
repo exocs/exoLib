@@ -137,6 +137,14 @@ namespace exoLib.Diagnostics.Console
 		/// </summary>
 		private int _currentFontSize = 0;
 		/// <summary>
+		/// The primary texture used by this console.
+		/// </summary>
+		private Texture2D _primaryTexture;
+		/// <summary>
+		/// The secondary texture used by this console.
+		/// </summary>
+		private Texture2D _secondaryTexture;
+		/// <summary>
 		/// History of executed commands.
 		/// </summary>
 		private CircularBuffer<string> _commandHistory = new CircularBuffer<string>(COMMAND_HISTORY_MAX);
@@ -230,15 +238,25 @@ namespace exoLib.Diagnostics.Console
 			// Has to be done from inside of GUI.
 			if (!_stylesCreated)
 			{
-				// Create plain white texture that will be used for background
-				var texture = new Texture2D(1, 1);
-				texture.SetPixels(new Color[] { Color.white });
-				texture.Apply();
+				// Get primary texture
+				if (_primaryTexture == null)
+				{
+					// Create plain white texture that will be used for background
+					_primaryTexture = new Texture2D(1, 1);
+					_primaryTexture.SetPixels(new Color[] { Color.white });
+					_primaryTexture.Apply();
+				}
+				var texture = _primaryTexture;
 
-				// Alternate texture that has darker color
-				var altTexture = new Texture2D(1, 1);
-				altTexture.SetPixels(new Color[] { new Color(0.2f, 0.2f, 0.2f, 0.6f) });
-				altTexture.Apply();
+				// Get secondary texture
+				if (_secondaryTexture == null)
+				{
+					// Alternate texture that has darker color
+					_secondaryTexture = new Texture2D(1, 1);
+					_secondaryTexture.SetPixels(new Color[] { new Color(0.2f, 0.2f, 0.2f, 0.6f) });
+					_secondaryTexture.Apply();
+				}
+				var altTexture = _secondaryTexture;
 
 				if (_windowStyle == null)
 				{
@@ -562,12 +580,26 @@ namespace exoLib.Diagnostics.Console
 			_lastInput = _currentInput;
 		}
 		/// <summary>
-		/// Draws and handles input for auto completion.
+		/// Release unneccessary resources.
 		/// </summary>
-		/// <param name="consoleRect">Rect of the console to append to.</param>
-		/// <param name="input">Input text to find suggestions for</param>
-		/// <returns>True if used picked a suggestion directly, false otherwise.</returns>
-		private bool DrawSuggestions(Rect consoleRect, string input)
+        protected override void OnDestroy()
+        {
+			// Release resources
+			if (_primaryTexture != null)
+				Destroy(_primaryTexture);
+			if (_secondaryTexture != null)
+				Destroy(_secondaryTexture);
+
+			// Call base
+			base.OnDestroy();
+		}
+        /// <summary>
+        /// Draws and handles input for auto completion.
+        /// </summary>
+        /// <param name="consoleRect">Rect of the console to append to.</param>
+        /// <param name="input">Input text to find suggestions for</param>
+        /// <returns>True if used picked a suggestion directly, false otherwise.</returns>
+        private bool DrawSuggestions(Rect consoleRect, string input)
 		{
 			int count = _suggestions.Count;
 			if (_lastInput != input)
