@@ -258,27 +258,80 @@ namespace exoLib.Diagnostics.Console
 			// Register help command
 			RegisterCommand("help", (args) =>
 			{
+				// Prepare our string builder
+				var stringBuilder = new StringBuilder();
+
+				// If help is called for a particular command,
+				// print full description for this command
+				if (args != null && args.Length > 0)
+				{
+					var commandName = args[0].ToUpperInvariant();
+					ConsoleCommand command = null;
+
+					// Try to find command directly
+					if (_commands.ContainsKey(commandName))
+					{
+						// Fetch command
+						command = _commands[commandName];
+					}
+					else
+					{
+						// Find partial matches
+						foreach (var keyPair in _commands)
+						{
+							if (keyPair.Key.StartsWith(commandName))
+							{
+								command = keyPair.Value;
+								break;
+							}
+						}
+					}
+
+					// If we found valid command, print information.
+					if (command != null)
+					{
+						// Build string                        
+						stringBuilder.Append($"Help for \"");
+						stringBuilder.Append(commandName.ToLowerInvariant());
+						stringBuilder.Append("\" command:\n");
+						if (command.Description == null)
+							stringBuilder.Append("No information provided.");
+						else
+							stringBuilder.Append(command.Description);
+						stringBuilder.Append(Environment.NewLine);
+
+						// Print string and finish
+						Debug.Log(stringBuilder.ToString());
+					}
+					else
+					{
+						// Print message
+						Debug.Log($"Command {args[0].ToLowerInvariant()} not found.");
+					}
+					return;
+				}
+
+				// Otherwise print generic help
 				// Create the help message
 				// in the following format:
 				//
-				//		commandName0: description
-				//		commandName1: description
+				//		commandName0: summary
+				//		commandName1: summary
 				//		...
-				//		commandNameN: description
+				//		commandNameN: summary
 				//
-				var stringBuilder = new StringBuilder();
 				foreach (var keyPairValue in _commands)
 				{
 					stringBuilder.Append(keyPairValue.Key.ToLowerInvariant());
-					stringBuilder.Append(": ");
-					stringBuilder.Append(keyPairValue.Value.Description);
+					stringBuilder.Append(":\t");
+					stringBuilder.Append(keyPairValue.Value.Summary);
 					stringBuilder.Append(Environment.NewLine);
 				}
 
 				// Log the help message
 				Debug.Log(stringBuilder.ToString());
 
-			}, 0, "Prints available commands information.");
+			}, 0, "Prints available commands information.", "Prints available commands information.\nYou can provide a command name to print help for specific command.");
 
 			// Register echo command
 			RegisterCommand("echo", (args) =>
@@ -462,11 +515,11 @@ namespace exoLib.Diagnostics.Console
 		/// <param name="commandName">The name (key) of this command.</param>
 		/// <param name="commandFunction">The function (callback) this command will invoke.</param>
 		/// <param name="minimumArgumentsCount">Minimum amount of arguments for this command (or 0 if none)</param>
-		/// <param name="description">Description of this command.</param>
+		/// <param name="summary">Short description of this command.</param>
 		/// <returns></returns>
-		public bool RegisterCommand(string commandName, ConsoleFunction commandFunction, uint minimumArgumentsCount = 0, string description = "No description provided")
+		public bool RegisterCommand(string commandName, ConsoleFunction commandFunction, uint minimumArgumentsCount = 0, string summary = "No description provided", string description = null)
 		{
-			var command = new ConsoleCommand(commandFunction, minimumArgumentsCount, description);
+			var command = new ConsoleCommand(commandFunction, minimumArgumentsCount, summary, description);
 			return RegisterCommand(commandName, command);
 		}
 		/// <summary>

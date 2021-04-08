@@ -17,6 +17,10 @@
 		/// </summary>
 		public readonly ConsoleFunction Function;
 		/// <summary>
+		/// Short summary of this function.
+		/// </summary>
+		public readonly string Summary;
+		/// <summary>
 		/// Description of this function.
 		/// </summary>
 		public readonly string Description;
@@ -27,11 +31,12 @@
 		/// <summary>
 		/// Create the wrapper from provided information
 		/// </summary>
-		public ConsoleCommand(ConsoleFunction function, uint minimumArgumentsCount = 0, string commandDescription = "No description provided.")
+		public ConsoleCommand(ConsoleFunction function, uint minimumArgumentsCount = 0, string summary = "No description provided.", string description = null)
 		{
 			Function = function;
 			MinimumArgumentsCount = minimumArgumentsCount;
-			Description = commandDescription;
+			Summary = summary;
+			Description = description;
 		}
 		/// <summary>
 		/// Hiding the default constructor.
