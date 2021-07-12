@@ -217,15 +217,16 @@ namespace exoLib.Collections.Generic
 			return _buffer[Head];
 		}
 		/// <summary>
-		/// Returns item at provided index without its removal.
+		/// Returns item at provided index (starting at current head) without its removal.
 		/// </summary>
 		public T PeekAt(int index)
 		{
 			if (IsEmpty)
 				throw new InvalidOperationException("The buffer is empty.");
 
-			if (Head + index > Count)
-				index = Head + index % Count;
+			index = Head + index;
+			if (index >= Capacity)
+				index -= Capacity;
 
 			return _buffer[index];
 		}
